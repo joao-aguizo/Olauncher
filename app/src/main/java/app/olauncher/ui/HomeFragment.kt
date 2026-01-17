@@ -4,6 +4,8 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +17,7 @@ import android.view.WindowInsets
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.ToggleButton
 import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
@@ -64,6 +67,13 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val lightToggle = view.findViewById<ToggleButton>(R.id.lightApp)
+
+        lightToggle.setOnCheckedChangeListener { _, isChecked ->
+            toggleFlashlight(requireContext(), isChecked)
+        }
+
         prefs = Prefs(requireContext())
         viewModel = activity?.run {
             ViewModelProvider(this)[MainViewModel::class.java]
@@ -488,6 +498,22 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             viewModel.setWallpaperWorker()
         }
         requireActivity().recreate()
+    }
+
+    fun toggleFlashlight(context: Context, enable: Boolean) {
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+
+        try {
+            val cameraId = cameraManager.cameraIdList.first {
+                cameraManager.getCameraCharacteristics(it)
+                    .get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+            }
+
+            cameraManager.setTorchMode(cameraId, enable)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun openScreenTimeDigitalWellbeing() {
